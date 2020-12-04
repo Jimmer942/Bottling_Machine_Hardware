@@ -1,74 +1,97 @@
-#include <Arduino_FreeRTOS.h>
+#include <Stepper.h> // Includes the librarie to control the stepper motor
 
-TaskHandle_t TaskHandle_1;
-TaskHandle_t TaskHandle_2;
-TaskHandle_t TaskHandle_3;
-TaskHandle_t TaskHandle_4;
+#define STEPS 1024 // This is the number of steps per second that the motor do
+Stepper stepper(STEPS, 23, 1, 22, 3); // This instance the stepper library and initialize the motor giving the steps and the pins on the hardware
+
+int relay = 39; // Sets the control pin for the relay in 39
+const int sensorObj = 36; // Sets the sensing pin to 36
+bool flag = LOW;
+
+
+TaskHandle_t Motor_Handle;
+TaskHandle_t Object_Handle;
+TaskHandle_t Relay_Handle;
 
 void setup()
-{  
-  Serial.begin(9600);
-  Serial.println(F("In Setup function"));
+{
+  Serial.begin(115200);
 
-  /* Create 4-tasks with priorities 1-4. Capture the Task details to respective handlers */
-  xTaskCreate(MyTask1, "Task1", 100, NULL, 1, &TaskHandle_1);
-  xTaskCreate(MyTask2, "Task2", 100, NULL, 2, &TaskHandle_2);  
-  xTaskCreate(MyTask3, "Task3", 100, NULL, 3, &TaskHandle_3);
-  xTaskCreate(MyTask4, "Task4", 100, NULL, 4, &TaskHandle_4); 
+  stepper.setSpeed(10); // This function sets the motor's speed in RPM
+  pinMode(relay, OUTPUT); //Sets the GPIO pin 39 to OUTPUT
+  pinMode(sensorObj, INPUT);  //Sets the GPIO pin 39 to INPUT
+
+  xTaskCreate(
+    SenseObject, /* Task function. */
+    "Sense an Object", /* name of task. */
+    10000, /* Stack size of task */
+    NULL, /* parameter of the task */
+    5, /* priority of the task */
+    &Object_Handle); /* Task handle to keep track of created task */
+
+  /* we create a new task here */
+  xTaskCreate(
+    MoveMotor, /* Task function. */
+    "Move the motor", /* name of task. */
+    10000, /* Stack size of task */
+    NULL, /* parameter of the task */
+    2, /* priority of the task */
+    &Motor_Handle); /* Task handle to keep track of created task */
+
+ 
+
+  /* we create a new task here */
+  xTaskCreate(
+    ActRelay, /* Task function. */
+    "another Task", /* name of task. */
+    10000, /* Stack size of task */
+    NULL, /* parameter of the task */
+    2, /* priority of the task */
+    &Relay_Handle); /* Task handle to keep track of created task */
 }
 
-
+/* the forever loop() function is invoked by Arduino ESP32 loopTask */
 void loop()
-{ // Hooked to Idle Task, will run when CPU is Idle
-  Serial.println(F("Loop function"));
-  delay(50);
-}
-
-
-/* Task1 with priority 1 */
-static void MyTask1(void* pvParameters)
 {
-    Serial.println("Task1 Changing its priority to 5");
-    vTaskPrioritySet(TaskHandle_1,5); //Now task1 is of highest priority
-     
-    Serial.println("Task1 Resuming Task2");
-    vTaskResume(TaskHandle_2);
-    
-    Serial.println("Task1 Resuming Task3");
-    vTaskResume(TaskHandle_3);
+}
+void SenseObject(void *param) {
+  for (;;) {
+    vTaskSuspend(Relay_Handle);
+    Serial.println("Sensing an object");
+    bool value = digitalRead(sensorObj);  //lectura digital de pin
+    if (value == LOW && flag == LOW) {
+      Serial.println("Detectado obstaculo");
+      vTaskSuspend(Motor_Handle);
+      vTaskResume(Relay_Handle);
+      vTaskSuspend(NULL);
+    }
+    flag = !value;
+    delay(10);
+  }
+}
 
-    Serial.println("Task1 Resuming Task4");
-    vTaskResume(TaskHandle_4);
-
-    Serial.println("Task1 Deleting Itself");
-    vTaskDelete(TaskHandle_1);
+// This function will be invoked a task thta will make the motor run
+void MoveMotor(void *param) {
+  // this is the action that the task will execute when it is called
+  for (;;) {
+    Serial.println("Motor is running");
+    stepper.step(STEPS); // Here the start the motor to runs a number of steps
+    delay(1000);
+  }
 }
 
 
-/* Task2 with priority 2 */
-static void MyTask2(void* pvParameters)
-{        
-    Serial.println(F("Task2, Deleting itself"));
-    vTaskDelete(NULL);     //Delete own task by passing NULL(TaskHandle_2 can also be used)
-}
+void ActRelay(void *params) {
+  for (;;) {
+    // digitalWrite(relay, HIGH); // envia señal alta al relay
+    Serial.println("Relay accionado");
+    delay(5000);           // 1 segundo
 
-
-/* Task3 with priority 3 */
-static void MyTask3(void* pvParameters)
-{
-    Serial.println(F("Task3, Deleting Itself"));
-    vTaskDelete(NULL);     //Delete own task by passing NULL(TaskHandle_3 can also be used)  
-}
-
-
-/* Task4 with priority 4 */
-static void MyTask4(void* pvParameters)
-{
-    Serial.println(F("Task4 Running, Suspending all tasks"));
-    vTaskSuspend(TaskHandle_2); //Suspend Task2/3
-    vTaskSuspend(TaskHandle_3);
-    vTaskSuspend(NULL); //Suspend Own Task
-
-    Serial.println(F("Back in Task4, Deleting Itself"));
-    vTaskDelete(TaskHandle_4);       
+    digitalWrite(relay, LOW);  // envia señal baja al relay
+    Serial.println("Relay no accionado");
+    delay(10);// 1 segundo
+    vTaskResume(Motor_Handle);
+    delay(10);// 1 segundo
+    vTaskResume(Object_Handle);
+    vTaskSuspend(NULL);
+  }
 }

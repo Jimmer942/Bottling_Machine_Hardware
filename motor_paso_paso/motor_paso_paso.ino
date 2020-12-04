@@ -1,11 +1,14 @@
 #include <Stepper.h>
 #define STEPS 2048
-Stepper stepper(STEPS, 8, 9, 10, 11);
+Stepper stepper(STEPS, 23, 1, 22, 3);
  
 void setup() {
+  Serial.begin(115200);
  stepper.setSpeed(10);
 }
  
 void loop() {
- stepper.step(STEPS);
+  Serial.println("Vuelta motor");
+  stepper.step(STEPS);
+  delay(5000);
 }

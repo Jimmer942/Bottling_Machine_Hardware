@@ -10,10 +10,10 @@ void loop() {
   // Código principal donde ocurren en loop
   digitalWrite(relay, HIGH); // envia señal alta al relay
   Serial.println("Relay accionado");
-  delay(5000);           // 1 segundo
+  delay(2000);           // 1 segundo
   
   digitalWrite(relay, LOW);  // envia señal baja al relay
   Serial.println("Relay no accionado");
-  delay(5000);           // 1 segundo
+  delay(2000);           // 1 segundo
 
 }
