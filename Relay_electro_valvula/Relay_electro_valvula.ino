@@ -1,4 +1,4 @@
-int relay = 2;
+int relay = 15;
 
 void setup() {
   // Configuración
@@ -8,12 +8,6 @@ void setup() {
 
 void loop() {
   // Código principal donde ocurren en loop
-  digitalWrite(relay, HIGH); // envia señal alta al relay
-  Serial.println("Relay accionado");
-  delay(2000);           // 1 segundo
-  
-  digitalWrite(relay, LOW);  // envia señal baja al relay
-  Serial.println("Relay no accionado");
-  delay(2000);           // 1 segundo
-
+   // envia señal alta al relay
+   digitalWrite(relay, HIGH);
 }

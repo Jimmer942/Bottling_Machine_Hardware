@@ -1,10 +1,10 @@
 #include <Stepper.h>
 #define STEPS 2048
-Stepper stepper(STEPS, 23, 1, 22, 3);
+Stepper stepper(STEPS, 8, 10, 9, 11 );
  
 void setup() {
-  Serial.begin(115200);
- stepper.setSpeed(10);
+  Serial.begin(9600);
+  stepper.setSpeed(10);
 }
  
 void loop() {

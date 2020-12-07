@@ -1,4 +1,4 @@
-const int sensorPin = 36;
+const int sensorPin = 23;
 bool flag = LOW;
 
 void setup() {
